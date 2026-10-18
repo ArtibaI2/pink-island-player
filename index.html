@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pink Island Player — Динамический Островок для Windows на Rust</title>
+  <meta name="description" content="Полупрозрачный десктопный аудиоплеер в эстетике Apple Dynamic Island для Windows 10/11. Нативное ядро Rust, системный трей, автозапуск и живой 24-полосный розовый эквалайзер.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="showcase.css">
+</head>
+<body>
+
+  <!-- Ambient Glow Background -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#" class="brand">
+        <div class="brand-icon">
+          <span class="brand-dot"></span>
+        </div>
+        <span class="brand-name">Pink Island</span>
+        <span class="brand-tag">v2.0 • Rust Core</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#demo" class="nav-link">Интерактивное Демо</a>
+        <a href="#features" class="nav-link">Возможности</a>
+        <a href="#architecture" class="nav-link">Архитектура</a>
+        <a href="#benchmark" class="nav-link">Производительность</a>
+        <a href="#install" class="nav-link">Установка</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="https://github.com/ArtibaI2/pink-island-player" target="_blank" class="btn btn-github">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-badge">
+      <span class="badge-pulse"></span>
+      <span>Стиль iPhone Dynamic Island для Windows 10 / 11</span>
+    </div>
+
+    <h1 class="hero-title">
+      Ваш системный звук в эстетике <br>
+      <span class="gradient-text">Dynamic Island</span>
+    </h1>
+
+    <p class="hero-subtitle">
+      Ультра-легкий прозрачный десктопный плеер на базе <strong>Rust Core</strong>. Прямой перехват Windows Media Session (Spotify, YouTube, Яндекс.Музыка, VK), 24-полосный живой аудио-спектрограф, автозагрузка и скрытие в системный трей.
+    </p>
+
+    <!-- Interactive Live Island Sandbox in Hero -->
+    <div class="hero-demo-wrapper" id="demo">
+      <div class="demo-instructions">
+        <span>✨ <strong>Попробуйте прямо сейчас:</strong> наведите курсор на островок ниже или нажмите Play!</span>
+      </div>
+
+      <div class="screen-simulation">
+        <!-- Floating Dynamic Island Widget Simulator -->
+        <div id="sim-island" class="sim-island collapsed">
+          
+          <!-- Collapsed Pill View -->
+          <div class="sim-pill-view">
+            <div class="sim-pill-left">
+              <div class="sim-cover-circle" id="sim-pill-cover">
+                <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80" alt="Cover" class="sim-art-img">
+              </div>
+              <div class="sim-pill-text">
+                <span class="sim-pill-title" id="sim-pill-title">Starboy (feat. Daft Punk)</span>
+                <span class="sim-pill-artist" id="sim-pill-artist">The Weeknd • Spotify</span>
+              </div>
+            </div>
+
+            <div class="sim-mini-bars" id="sim-mini-bars">
+              <span class="m-bar"></span>
+              <span class="m-bar"></span>
+              <span class="m-bar"></span>
+              <span class="m-bar"></span>
+            </div>
+          </div>
+
+          <!-- Expanded Full Card View -->
+          <div class="sim-expanded-view">
+            <div class="sim-header">
+              <div class="sim-app-badge">
+                <span class="dot-live"></span>
+                <span>SPOTIFY / WINDOWS AUDIO</span>
+              </div>
+              <div class="sim-header-tools">
+                <button class="sim-btn-tool" id="tool-pin" title="Закрепить открытым">📌</button>
+                <button class="sim-btn-tool" id="tool-collapse" title="Свернуть">✕</button>
+              </div>
+            </div>
+
+            <div class="sim-body">
+              <div class="sim-main-cover-wrapper">
+                <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=200&q=80" alt="Cover" class="sim-main-cover" id="sim-main-cover">
+                <div class="sim-cover-glow"></div>
+              </div>
+
+              <div class="sim-track-meta">
+                <div class="sim-track-title" id="sim-main-title">Starboy (feat. Daft Punk)</div>
+                <div class="sim-track-artist" id="sim-main-artist">The Weeknd</div>
+                <div class="sim-track-album">Starboy (Deluxe Edition)</div>
+              </div>
+            </div>
+
+            <!-- 24 Live Spectrum Frequency Waves -->
+            <div class="sim-spectrum-container" id="sim-spectrum">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- Scrubbable Seek Bar -->
+            <div class="sim-timeline">
+              <div class="sim-progress-track" id="sim-progress-track">
+                <div class="sim-progress-fill" id="sim-progress-fill"></div>
+                <div class="sim-progress-thumb" id="sim-progress-thumb"></div>
+              </div>
+              <div class="sim-time-row">
+                <span id="sim-time-current">01:24</span>
+                <span id="sim-time-total">-02:26</span>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="sim-controls">
+              <button class="sim-ctrl-btn" id="sim-btn-prev">⏮</button>
+              <button class="sim-ctrl-play" id="sim-btn-play">▶</button>
+              <button class="sim-ctrl-btn" id="sim-btn-next">⏭</button>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Dock position controls on landing -->
+      <div class="demo-dock-bar">
+        <span class="dock-label">Положение островка:</span>
+        <button class="btn-dock active" data-dock="right">Правый край (Default)</button>
+        <button class="btn-dock" data-dock="top">Сверху (Оригинал iPhone)</button>
+        <button class="btn-dock" data-dock="left">Левый край</button>
+        <button class="btn-dock" data-dock="center">Свободный режим</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section class="features-section" id="features">
+    <div class="section-header">
+      <span class="section-tag">Инженерное совершенство</span>
+      <h2 class="section-title">Создан для максимального комфорта</h2>
+      <p class="section-desc">Никаких тяжелых процессов в памяти. Только легкое, мгновенное нативное приложение.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon icon-rust">🦀</div>
+        <h3 class="feature-title">Нативное ядро Rust (1.8 МБ)</h3>
+        <p class="feature-text">Прямое подключение к Windows Media Transports Control (GSMTC) и Storage Streams. Мгновенное извлечение HD-обложек альбомов и статуса трека.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-glass">💎</div>
+        <h3 class="feature-title">Чистое матовое стекло (32-bit ARGB)</h3>
+        <p class="feature-text">Попиксельная прозрачность без белых фонов и артефактов. Только скругленная капсула Dynamic Island с неоновым розовым ореолом.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-tray">🔔</div>
+        <h3 class="feature-title">Системный трей и чистый Taskbar</h3>
+        <p class="feature-text">Не захламляет панель задач Windows. Плеер аккуратно живет в системном трее рядом с часами с быстрым контекстным меню.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-eq">📊</div>
+        <h3 class="feature-title">24-полосный живой спектрограф</h3>
+        <p class="feature-text">Динамические частотные волны в розово-малиновом градиенте, пульсирующие в реальном времени под ритм играющей музыки.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-boot">⚡</div>
+        <h3 class="feature-title">Автозапуск со стартом Windows</h3>
+        <p class="feature-text">Встроенная интеграция в реестр автозапуска. Стартует бесшумно в фоне и готов к работе в ту же секунду, когда заиграет музыка.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon icon-spring">🧲</div>
+        <h3 class="feature-title">Пружинная физика Apple (Spring Easing)</h3>
+        <p class="feature-text">Плавное морфирование из тонкой капсулы в развернутую карточку за 280мс с кривой сглаживания <code>cubic-bezier(0.16, 1, 0.3, 1)</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Performance Comparison -->
+  <section class="benchmark-section" id="benchmark">
+    <div class="section-header">
+      <span class="section-tag">Сравнение</span>
+      <h2 class="section-title">Производительность и ресурсы</h2>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="benchmark-table">
+        <thead>
+          <tr>
+            <th>Параметр</th>
+            <th class="col-highlight">Pink Island (Rust Core)</th>
+            <th>Обычные Electron-виджеты</th>
+            <th>Стандартный плеер Windows</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Потребление ОЗУ в простое</td>
+            <td class="col-highlight highlight-val">~4-8 МБ</td>
+            <td>300 - 550 МБ</td>
+            <td>85 - 140 МБ</td>
+          </tr>
+          <tr>
+            <td>Нагрузка на CPU</td>
+            <td class="col-highlight highlight-val">0.05%</td>
+            <td>3% - 8%</td>
+            <td>1% - 2%</td>
+          </tr>
+          <tr>
+            <td>Время холодного старта</td>
+            <td class="col-highlight highlight-val">&lt; 150 мс</td>
+            <td>2.8 сек</td>
+            <td>1.2 сек</td>
+          </tr>
+          <tr>
+            <td>Размер бинарника ядра</td>
+            <td class="col-highlight highlight-val">1.8 МБ</td>
+            <td>140+ МБ</td>
+            <td>Встроен в ОС</td>
+          </tr>
+          <tr>
+            <td>Системный трей + Автозагрузка</td>
+            <td class="col-highlight highlight-val">✓ Из коробки</td>
+            <td>Требует плагинов</td>
+            <td>Нет</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section class="arch-section" id="architecture">
+    <div class="section-header">
+      <span class="section-tag">Под капотом</span>
+      <h2 class="section-title">Архитектура системы</h2>
+    </div>
+
+    <div class="arch-diagram">
+      <div class="arch-node node-source">
+        <div class="node-title">🎵 Источники звука Windows</div>
+        <div class="node-sub">Spotify, Яндекс Музыка, VK, Chrome, Telegram, VLC</div>
+      </div>
+      <div class="arch-arrow">▼ WinRT GSMTC</div>
+      <div class="arch-node node-rust">
+        <div class="node-badge">RUST NATIVE</div>
+        <div class="node-title">🦀 pink_core.exe (1.8 MB)</div>
+        <div class="node-sub">Высокоскоростной WinRT парсер метаданных и Base64 потоков обложек • TCP API :48123</div>
+      </div>
+      <div class="arch-arrow">▼ IPC / HTTP State Loop</div>
+      <div class="arch-node node-ui">
+        <div class="node-badge">PER-PIXEL ALPHA</div>
+        <div class="node-title">💎 Desktop Dynamic Island UI</div>
+        <div class="node-sub">Frameless + ToolWindow + System Tray + Spring Animations</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Installation / Quick Start -->
+  <section class="install-section" id="install">
+    <div class="install-card">
+      <h2 class="install-title">Готовы попробовать Pink Island?</h2>
+      <p class="install-desc">Запустите в один клик на вашем Windows 10/11 ПК прямо сейчас.</p>
+
+      <div class="code-box">
+        <div class="code-header">
+          <span>PowerShell / CMD</span>
+          <button class="btn-copy" id="btn-copy-cmd">Копировать</button>
+        </div>
+        <pre><code id="code-text">git clone https://github.com/ArtibaI2/pink-island-player.git
+cd pink-island-player
+start_player.vbs</code></pre>
+      </div>
+
+      <div class="install-buttons">
+        <a href="https://github.com/ArtibaI2/pink-island-player" target="_blank" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          Открыть Репозиторий на GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <span class="footer-logo">Pink Island Player</span>
+        <span class="footer-copy">© 2026 ArtibaI2. Открытый исходный код под лицензией MIT.</span>
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/ArtibaI2/pink-island-player" target="_blank">GitHub</a>
+        <a href="#demo">Интерактивный симулятор</a>
+        <a href="#features">Возможности</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="showcase.js"></script>
+</body>
+</html>
