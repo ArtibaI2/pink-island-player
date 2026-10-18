@@ -292,12 +292,14 @@ body {
 /* The Live Dynamic Island Widget Simulator */
 .sim-island {
   position: relative;
-  background: rgba(16, 10, 20, 0.85);
+  background: rgba(16, 10, 22, 0.42);
   backdrop-filter: blur(40px) saturate(210%);
   -webkit-backdrop-filter: blur(40px) saturate(210%);
-  border: 1px solid rgba(255, 65, 130, 0.4);
+  border: 1.5px solid rgba(255, 65, 130, 0.55);
   box-shadow: 
-    0 18px 45px rgba(0, 0, 0, 0.7),
+    0 18px 45px rgba(0, 0, 0, 0.6),
+    0 0 35px rgba(255, 45, 117, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
     0 0 35px var(--color-pink-glow),
     inset 0 1px 1px rgba(255, 255, 255, 0.2);
   color: #fff;
