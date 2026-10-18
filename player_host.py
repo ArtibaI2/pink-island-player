@@ -19,21 +19,20 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtGui import (
     QPainter, QColor, QBrush, QPen, QPixmap, QImage,
-    QIcon, QFont, QCursor, QLinearGradient, QPolygonF
+    QIcon, QFont, QCursor, QLinearGradient, QPolygonF,
+    QPainterPath
 )
-from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 
 # Registry constants for Windows Autostart
 REG_AUTORUN = r"Software\Microsoft\Windows\CurrentVersion\Run"
 APP_NAME = "PinkIslandPlayer"
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "player_settings.json")
-SOCKET_NAME = "PinkIslandPlayer_SingleInstance_V2"
 
 
 def load_settings():
     default_settings = {
-        "bg_alpha": 0,         # 0 = 100% transparent zero background fill!
-        "dock_mode": "right",
+        "bg_alpha": 255,       # Solid jet black as requested by user ("фон черный")
+        "dock_mode": "top",    # Centered at top of screen ("щелочка вверху")
         "is_pinned": False
     }
     if os.path.exists(SETTINGS_FILE):
@@ -89,6 +88,46 @@ def get_screen_resolution():
         return ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1)
     except Exception:
         return 1920, 1080
+
+
+def create_pink_icon(icon_type, size=18):
+    pix = QPixmap(size, size)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    p.setBrush(QBrush(QColor(255, 45, 117)))
+    p.setPen(Qt.PenStyle.NoPen)
+
+    s = float(size)
+    if icon_type == "prev":
+        p.drawRoundedRect(int(s * 0.16), int(s * 0.22), int(s * 0.14), int(s * 0.56), 1, 1)
+        poly = QPolygonF([
+            QPointF(s * 0.82, s * 0.22),
+            QPointF(s * 0.38, s * 0.50),
+            QPointF(s * 0.82, s * 0.78)
+        ])
+        p.drawPolygon(poly)
+    elif icon_type == "next":
+        p.drawRoundedRect(int(s * 0.70), int(s * 0.22), int(s * 0.14), int(s * 0.56), 1, 1)
+        poly = QPolygonF([
+            QPointF(s * 0.18, s * 0.22),
+            QPointF(s * 0.62, s * 0.50),
+            QPointF(s * 0.18, s * 0.78)
+        ])
+        p.drawPolygon(poly)
+    elif icon_type == "play":
+        poly = QPolygonF([
+            QPointF(s * 0.28, s * 0.20),
+            QPointF(s * 0.80, s * 0.50),
+            QPointF(s * 0.28, s * 0.80)
+        ])
+        p.drawPolygon(poly)
+    elif icon_type == "pause":
+        p.drawRoundedRect(int(s * 0.25), int(s * 0.20), int(s * 0.18), int(s * 0.60), 1, 1)
+        p.drawRoundedRect(int(s * 0.57), int(s * 0.20), int(s * 0.18), int(s * 0.60), 1, 1)
+
+    p.end()
+    return QIcon(pix)
 
 
 def create_media_icon(icon_type, color=QColor(255, 255, 255, 230), size=24):
@@ -217,78 +256,30 @@ class SpectrumWidget(QWidget):
             painter.drawRoundedRect(int(x), int(y), int(bar_w), int(bar_h), 1.5, 1.5)
 
 
-# Mini Equalizer in Collapsed Pill
-class MiniEqWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedSize(22, 16)
-        self.is_playing = False
-        self.step = 0
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.animate)
-        self.timer.start(90)
-
-    def setPlaying(self, playing):
-        self.is_playing = bool(playing)
-        self.update()
-
-    def animate(self):
-        if self.is_playing:
-            self.step = (self.step + 1) % 100
-            self.update()
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        h = self.height()
-        bar_w = 3.0
-        gap = 2.5
-
-        import math
-        for i in range(4):
-            x = i * (bar_w + gap)
-            if self.is_playing:
-                factor = (math.sin(self.step * 0.35 + i * 1.3) + 1.0) / 2.0
-                bar_h = max(3.0, 3.0 + factor * (h - 4.0))
-            else:
-                bar_h = 3.0
-            y = h - bar_h
-
-            grad = QLinearGradient(x, y, x, h)
-            grad.setColorAt(0.0, QColor(255, 115, 165))
-            grad.setColorAt(1.0, QColor(255, 45, 117))
-
-            painter.setBrush(grad)
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.drawRoundedRect(int(x), int(y), int(bar_w), int(bar_h), 1.5, 1.5)
-
-
 # Main Dynamic Island Player Window
 class PinkIslandPlayer(QWidget):
     TRANSPARENCY_PRESETS = [
+        ("Глубокий чёрный (100% Black — Рекомендуется)", 255),
         ("100% Прозрачный (без фона)", 0),
-        ("Кристально-прозрачный (15%)", 38),
-        ("Прозрачное стекло (35% — Рекомендуется)", 85),
+        ("Кристальное стекло (15%)", 38),
+        ("Прозрачное стекло (35%)", 85),
         ("Полупрозрачный (60%)", 150),
-        ("Тёмное стекло (80%)", 205),
     ]
 
     def __init__(self, rust_proc=None):
         super().__init__()
         self.rust_proc = rust_proc
         self.settings = load_settings()
-        self.dock_mode = self.settings.get("dock_mode", "right")
-        self.bg_alpha = int(self.settings.get("bg_alpha", 0))  # Default 0 = 100% transparent
+        self.dock_mode = self.settings.get("dock_mode", "top")  # Default TOP notch
+        self.bg_alpha = int(self.settings.get("bg_alpha", 255)) # Default black
         self.is_expanded = False
         self.is_pinned = bool(self.settings.get("is_pinned", False))
         self.current_state = None
         self.tray_manager = None
 
-        # Sizes
-        self.pill_w = 230
-        self.pill_h = 46
+        # Sizes: Collapsed Top Slit (340x32px), Expanded Card (380x220px)
+        self.pill_w = 340
+        self.pill_h = 32
         self.expanded_w = 380
         self.expanded_h = 220
 
@@ -314,7 +305,7 @@ class PinkIslandPlayer(QWidget):
         # UI Setup
         self.init_ui()
 
-        # Position to initial dock (right edge)
+        # Position to initial dock (top center notch)
         self.snap_to_dock()
 
         # Start Rust API Poller
@@ -336,7 +327,7 @@ class PinkIslandPlayer(QWidget):
             idx = alphas.index(self.bg_alpha)
             next_alpha = alphas[(idx + 1) % len(alphas)]
         except ValueError:
-            next_alpha = 0
+            next_alpha = 255
         self.set_background_transparency(next_alpha)
 
     def init_ui(self):
@@ -361,39 +352,69 @@ class PinkIslandPlayer(QWidget):
             self.pill_container.show()
             self.setFixedSize(self.pill_w, self.pill_h)
 
-    # 1. Collapsed Pill View Setup
+    # 1. Collapsed Top Slit View (Черная щелочка с розовыми кнопками)
     def setup_pill_view(self):
         self.pill_container = QWidget(self)
         self.pill_container.setFixedSize(self.pill_w, self.pill_h)
         layout = QHBoxLayout(self.pill_container)
-        layout.setContentsMargins(10, 6, 12, 6)
-        layout.setSpacing(10)
+        layout.setContentsMargins(10, 0, 10, 0)
+        layout.setSpacing(6)
 
         # Mini Cover Art (circle)
         self.pill_cover = QLabel(self.pill_container)
-        self.pill_cover.setFixedSize(30, 30)
-        self.pill_cover.setStyleSheet("border-radius: 15px; background: rgba(255, 45, 117, 0.4);")
+        self.pill_cover.setFixedSize(22, 22)
+        self.pill_cover.setStyleSheet("border-radius: 11px; background: rgba(255, 45, 117, 0.4); border: 1px solid rgba(255, 45, 117, 0.7);")
         self.pill_cover.setScaledContents(True)
+        self.pill_cover.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.pill_cover.mousePressEvent = lambda e: self.expand_island()
         layout.addWidget(self.pill_cover)
 
-        # Track meta (Title & Artist)
-        meta_layout = QVBoxLayout()
-        meta_layout.setSpacing(1)
-        meta_layout.setContentsMargins(0, 0, 0, 0)
-
-        self.pill_title = QLabel("Подключение...", self.pill_container)
+        # Track meta (Title in slit, clicking expands)
+        self.pill_title = QLabel("Нет воспроизведения", self.pill_container)
         self.pill_title.setStyleSheet("color: #ffffff; font-size: 11px; font-weight: 700; background: transparent;")
-        meta_layout.addWidget(self.pill_title)
+        self.pill_title.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.pill_title.mousePressEvent = lambda e: self.expand_island()
+        layout.addWidget(self.pill_title, 1)
 
-        self.pill_artist = QLabel("Ожидание аудио", self.pill_container)
-        self.pill_artist.setStyleSheet("color: #ff65a3; font-size: 10px; font-weight: 500; background: transparent;")
-        meta_layout.addWidget(self.pill_artist)
+        # Pink Control Buttons inside the slit ("кнопки розовые через него можно тыкать")
+        btn_slit_style = """
+            QPushButton {
+                background: transparent;
+                border: none;
+                border-radius: 11px;
+                padding: 1px;
+            }
+            QPushButton:hover {
+                background: rgba(255, 45, 117, 0.3);
+            }
+        """
 
-        layout.addLayout(meta_layout, 1)
+        self.btn_slit_prev = QPushButton(self.pill_container)
+        self.btn_slit_prev.setIcon(create_pink_icon("prev", size=16))
+        self.btn_slit_prev.setIconSize(QSize(14, 14))
+        self.btn_slit_prev.setFixedSize(22, 22)
+        self.btn_slit_prev.setStyleSheet(btn_slit_style)
+        self.btn_slit_prev.setToolTip("Предыдущий трек")
+        self.btn_slit_prev.clicked.connect(lambda: self.send_command("prev"))
+        layout.addWidget(self.btn_slit_prev)
 
-        # Mini Equalizer
-        self.mini_eq = MiniEqWidget(self.pill_container)
-        layout.addWidget(self.mini_eq)
+        self.btn_slit_play = QPushButton(self.pill_container)
+        self.btn_slit_play.setIcon(create_pink_icon("play", size=18))
+        self.btn_slit_play.setIconSize(QSize(16, 16))
+        self.btn_slit_play.setFixedSize(24, 24)
+        self.btn_slit_play.setStyleSheet(btn_slit_style)
+        self.btn_slit_play.setToolTip("Воспроизведение / Пауза")
+        self.btn_slit_play.clicked.connect(lambda: self.send_command("toggle"))
+        layout.addWidget(self.btn_slit_play)
+
+        self.btn_slit_next = QPushButton(self.pill_container)
+        self.btn_slit_next.setIcon(create_pink_icon("next", size=16))
+        self.btn_slit_next.setIconSize(QSize(14, 14))
+        self.btn_slit_next.setFixedSize(22, 22)
+        self.btn_slit_next.setStyleSheet(btn_slit_style)
+        self.btn_slit_next.setToolTip("Следующий трек")
+        self.btn_slit_next.clicked.connect(lambda: self.send_command("next"))
+        layout.addWidget(self.btn_slit_next)
 
     # 2. Expanded Player View Setup
     def setup_expanded_view(self):
@@ -435,15 +456,9 @@ class PinkIslandPlayer(QWidget):
         """
 
         # Dock mode buttons: Left, Top, Right, Float
-        self.btn_dock_left = QPushButton("◄", self.exp_container)
-        self.btn_dock_left.setStyleSheet(btn_style)
-        self.btn_dock_left.setToolTip("Прикрепить слева")
-        self.btn_dock_left.clicked.connect(lambda: self.set_dock_mode("left"))
-        header.addWidget(self.btn_dock_left)
-
         self.btn_dock_top = QPushButton("▲", self.exp_container)
         self.btn_dock_top.setStyleSheet(btn_style)
-        self.btn_dock_top.setToolTip("Остров сверху (Dynamic Island)")
+        self.btn_dock_top.setToolTip("Щелочка сверху (Dynamic Island)")
         self.btn_dock_top.clicked.connect(lambda: self.set_dock_mode("top"))
         header.addWidget(self.btn_dock_top)
 
@@ -452,6 +467,12 @@ class PinkIslandPlayer(QWidget):
         self.btn_dock_right.setToolTip("Прикрепить справа")
         self.btn_dock_right.clicked.connect(lambda: self.set_dock_mode("right"))
         header.addWidget(self.btn_dock_right)
+
+        self.btn_dock_left = QPushButton("◄", self.exp_container)
+        self.btn_dock_left.setStyleSheet(btn_style)
+        self.btn_dock_left.setToolTip("Прикрепить слева")
+        self.btn_dock_left.clicked.connect(lambda: self.set_dock_mode("left"))
+        header.addWidget(self.btn_dock_left)
 
         self.btn_dock_float = QPushButton("✦", self.exp_container)
         self.btn_dock_float.setStyleSheet(btn_style)
@@ -462,7 +483,7 @@ class PinkIslandPlayer(QWidget):
         # Quick Transparency Toggle Button
         self.btn_trans = QPushButton("💎", self.exp_container)
         self.btn_trans.setStyleSheet(btn_style)
-        self.btn_trans.setToolTip("Прозрачность фона (нажмите для смены режима)")
+        self.btn_trans.setToolTip("Прозрачность фона (нажмите для смены)")
         self.btn_trans.clicked.connect(self.cycle_transparency)
         header.addWidget(self.btn_trans)
 
@@ -554,16 +575,16 @@ class PinkIslandPlayer(QWidget):
             }
         """
         self.btn_prev = QPushButton(self.exp_container)
-        self.btn_prev.setIcon(create_media_icon("prev", size=22))
-        self.btn_prev.setIconSize(QSize(20, 20))
+        self.btn_prev.setIcon(create_pink_icon("prev", size=20))
+        self.btn_prev.setIconSize(QSize(18, 18))
         self.btn_prev.setStyleSheet(ctrl_btn_style)
         self.btn_prev.setFixedSize(36, 36)
         self.btn_prev.clicked.connect(lambda: self.send_command("prev"))
         ctrl_row.addWidget(self.btn_prev)
 
         self.btn_play = QPushButton(self.exp_container)
-        self.btn_play.setIcon(create_media_icon("play", color=QColor(255, 255, 255), size=24))
-        self.btn_play.setIconSize(QSize(22, 22))
+        self.btn_play.setIcon(create_pink_icon("play", size=22))
+        self.btn_play.setIconSize(QSize(20, 20))
         self.btn_play.setFixedSize(42, 42)
         self.btn_play.setStyleSheet("""
             QPushButton {
@@ -579,8 +600,8 @@ class PinkIslandPlayer(QWidget):
         ctrl_row.addWidget(self.btn_play)
 
         self.btn_next = QPushButton(self.exp_container)
-        self.btn_next.setIcon(create_media_icon("next", size=22))
-        self.btn_next.setIconSize(QSize(20, 20))
+        self.btn_next.setIcon(create_pink_icon("next", size=20))
+        self.btn_next.setIconSize(QSize(18, 18))
         self.btn_next.setStyleSheet(ctrl_btn_style)
         self.btn_next.setFixedSize(36, 36)
         self.btn_next.clicked.connect(lambda: self.send_command("next"))
@@ -590,44 +611,62 @@ class PinkIslandPlayer(QWidget):
 
         layout.addLayout(ctrl_row)
 
-    # Background Painting: Per-pixel alpha transparency + Glowing Pink Border
+    # Background Painting: Solid Jet Black (фон черный) + Pink Border (кнопки розовые)
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         rect = self.rect()
-        radius = 23.0 if not self.is_expanded else 26.0
 
-        # Dynamic glass background fill based on selected transparency
-        if self.bg_alpha > 0:
-            glass_grad = QLinearGradient(0, 0, 0, rect.height())
-            glass_grad.setColorAt(0.0, QColor(255, 255, 255, min(255, int(self.bg_alpha * 0.35))))
-            glass_grad.setColorAt(0.12, QColor(22, 12, 28, self.bg_alpha))
-            glass_grad.setColorAt(1.0, QColor(10, 5, 16, self.bg_alpha))
-            painter.setBrush(QBrush(glass_grad))
+        if not self.is_expanded and self.dock_mode == "top":
+            # Notch slit attached to top monitor border: flat top, rounded bottom corners
+            path = QPainterPath()
+            w = float(rect.width())
+            h = float(rect.height())
+            r = 15.0
+            path.moveTo(0, 0)
+            path.lineTo(w, 0)
+            path.lineTo(w, h - r)
+            path.quadTo(w, h, w - r, h)
+            path.lineTo(r, h)
+            path.quadTo(0, h, 0, h - r)
+            path.closeSubpath()
+
+            if self.bg_alpha > 0:
+                painter.setBrush(QColor(0, 0, 0, self.bg_alpha))
+            else:
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+
+            painter.setPen(QPen(QColor(255, 45, 117), 1.5))
+            painter.drawPath(path)
         else:
-            painter.setBrush(Qt.BrushStyle.NoBrush)
+            # Expanded card or other dock mode
+            radius = 24.0 if not self.is_expanded else 26.0
 
-        border_alpha = 180 if self.bg_alpha == 0 else 140
-        border_pen = QPen(QColor(255, 45, 117, border_alpha), 1.5)
-        painter.setPen(border_pen)
-        painter.drawRoundedRect(rect.adjusted(1, 1, -1, -1), radius, radius)
+            if self.bg_alpha > 0:
+                painter.setBrush(QColor(0, 0, 0, self.bg_alpha))
+            else:
+                painter.setBrush(Qt.BrushStyle.NoBrush)
 
-    # Snap / Docking Logic
+            border_alpha = 180 if self.bg_alpha == 0 else 140
+            painter.setPen(QPen(QColor(255, 45, 117, border_alpha), 1.5))
+            painter.drawRoundedRect(rect.adjusted(1, 1, -1, -1), radius, radius)
+
+    # Snap / Docking Logic (Top notch is centered at y=0)
     def snap_to_dock(self):
         screen_w, screen_h = get_screen_resolution()
         cur_w = self.expanded_w if self.is_expanded else self.pill_w
         cur_h = self.expanded_h if self.is_expanded else self.pill_h
 
-        if self.dock_mode == "right":
+        if self.dock_mode == "top":
+            x = int((screen_w - cur_w) / 2)
+            y = 0  # Flush with top edge of screen
+        elif self.dock_mode == "right":
             x = screen_w - cur_w - 15
             y = int((screen_h - cur_h) * 0.45)
         elif self.dock_mode == "left":
             x = 15
             y = int((screen_h - cur_h) * 0.45)
-        elif self.dock_mode == "top":
-            x = int((screen_w - cur_w) / 2)
-            y = 12
         else:
             x = self.x()
             y = self.y()
@@ -640,6 +679,7 @@ class PinkIslandPlayer(QWidget):
         self.settings["dock_mode"] = mode
         save_settings(self.settings)
         self.snap_to_dock()
+        self.update()
 
     # Expand / Collapse with Smooth Geometry Animation
     def expand_island(self):
@@ -662,17 +702,18 @@ class PinkIslandPlayer(QWidget):
             self.exp_container.hide()
             self.pill_container.show()
             self.setFixedSize(self.pill_w, self.pill_h)
+            self.update()
 
     def animate_geometry(self, target_w, target_h, on_finish=None):
         screen_w, _ = get_screen_resolution()
         cur_geom = self.geometry()
 
-        if self.dock_mode == "right":
+        if self.dock_mode == "top":
+            target_x = int((screen_w - target_w) / 2)
+            target_y = 0
+        elif self.dock_mode == "right":
             target_x = screen_w - target_w - 15
             target_y = cur_geom.y()
-        elif self.dock_mode == "top":
-            target_x = int((screen_w - target_w) / 2)
-            target_y = 12
         elif self.dock_mode == "left":
             target_x = 15
             target_y = cur_geom.y()
@@ -686,7 +727,7 @@ class PinkIslandPlayer(QWidget):
         self.setMaximumSize(16777215, 16777215)
 
         self.anim = QPropertyAnimation(self, b"geometry")
-        self.anim.setDuration(260)
+        self.anim.setDuration(240)
         self.anim.setEasingCurve(QEasingCurve.Type.OutCubic)
         self.anim.setStartValue(cur_geom)
         self.anim.setEndValue(target_geom)
@@ -767,10 +808,19 @@ class PinkIslandPlayer(QWidget):
         pos = data.get("position_sec") or 0.0
         dur = max(1.0, data.get("duration_sec") or 180.0)
 
-        # Pill meta
-        self.pill_title.setText(title[:26] + ("..." if len(title) > 26 else ""))
-        self.pill_artist.setText(artist[:22] + ("..." if len(artist) > 22 else ""))
-        self.mini_eq.setPlaying(is_playing)
+        # Pill / Slit meta: Title and artist
+        if title and title != "Нет воспроизведения":
+            pill_text = f"{title} • {artist}" if artist else title
+        else:
+            pill_text = "Нет воспроизведения"
+        self.pill_title.setText(pill_text[:34] + ("..." if len(pill_text) > 34 else ""))
+
+        # Update play buttons on both slit and expanded card with pink icons
+        slit_play_icon = create_pink_icon("pause" if is_playing else "play", size=18)
+        self.btn_slit_play.setIcon(slit_play_icon)
+
+        exp_play_icon = create_pink_icon("pause" if is_playing else "play", size=22)
+        self.btn_play.setIcon(exp_play_icon)
 
         # Expanded meta
         self.main_title.setText(title[:34] + ("..." if len(title) > 34 else ""))
@@ -786,13 +836,11 @@ class PinkIslandPlayer(QWidget):
         elif "TELEGRAM" in clean_app: clean_app = "TELEGRAM"
         self.app_badge.setText(clean_app if clean_app else "WINDOWS AUDIO")
 
-        # Status dot & Play button
+        # Status dot
         if is_playing:
             self.status_dot.setStyleSheet("border-radius: 4px; background: #30d158;")
-            self.btn_play.setIcon(create_media_icon("pause", color=QColor(255, 255, 255), size=24))
         else:
             self.status_dot.setStyleSheet("border-radius: 4px; background: #ff2d75;")
-            self.btn_play.setIcon(create_media_icon("play", color=QColor(255, 255, 255), size=24))
 
         # Timeline
         ratio = max(0.0, min(1.0, pos / dur))
@@ -839,9 +887,9 @@ class SystemTrayManager:
         self.menu = QMenu()
         self.menu.setStyleSheet("""
             QMenu {
-                background: #18121c;
+                background: #000000;
                 color: #ffffff;
-                border: 1px solid rgba(255, 45, 117, 0.4);
+                border: 1px solid rgba(255, 45, 117, 0.6);
                 border-radius: 8px;
                 padding: 6px;
             }
@@ -854,7 +902,7 @@ class SystemTrayManager:
             }
             QMenu::separator {
                 height: 1px;
-                background: rgba(255, 255, 255, 0.1);
+                background: rgba(255, 45, 117, 0.25);
                 margin: 4px 6px;
             }
         """)
@@ -870,8 +918,24 @@ class SystemTrayManager:
 
         self.menu.addSeparator()
 
+        # Dock Submenu
+        dock_menu = self.menu.addMenu("🧭 Положение на экране")
+        dock_menu.setStyleSheet(self.menu.styleSheet())
+
+        act_top = dock_menu.addAction("Сверху (Щелочка / Dynamic Island)")
+        act_top.triggered.connect(lambda: self.win.set_dock_mode("top"))
+
+        act_right = dock_menu.addAction("Справа у края")
+        act_right.triggered.connect(lambda: self.win.set_dock_mode("right"))
+
+        act_left = dock_menu.addAction("Слева у края")
+        act_left.triggered.connect(lambda: self.win.set_dock_mode("left"))
+
+        act_float = dock_menu.addAction("Свободный режим")
+        act_float.triggered.connect(lambda: self.win.set_dock_mode("float"))
+
         # Transparency Submenu
-        trans_menu = self.menu.addMenu("💎 Прозрачность фона")
+        trans_menu = self.menu.addMenu("💎 Стиль фона")
         trans_menu.setStyleSheet(self.menu.styleSheet())
         self.trans_actions = {}
         for label, a_val in self.win.TRANSPARENCY_PRESETS:
@@ -880,22 +944,6 @@ class SystemTrayManager:
             act.setChecked(self.win.bg_alpha == a_val)
             act.triggered.connect(lambda checked, a=a_val: self.win.set_background_transparency(a))
             self.trans_actions[a_val] = act
-
-        # Dock Submenu
-        dock_menu = self.menu.addMenu("🧭 Положение на экране")
-        dock_menu.setStyleSheet(self.menu.styleSheet())
-
-        act_right = dock_menu.addAction("Справа у края (По умолчанию)")
-        act_right.triggered.connect(lambda: self.win.set_dock_mode("right"))
-
-        act_top = dock_menu.addAction("Сверху (Dynamic Island)")
-        act_top.triggered.connect(lambda: self.win.set_dock_mode("top"))
-
-        act_left = dock_menu.addAction("Слева у края")
-        act_left.triggered.connect(lambda: self.win.set_dock_mode("left"))
-
-        act_float = dock_menu.addAction("Свободный режим")
-        act_float.triggered.connect(lambda: self.win.set_dock_mode("float"))
 
         self.menu.addSeparator()
 
