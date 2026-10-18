@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pink Island Player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Main Floating Dynamic Island Container -->
+  <div id="island" class="island collapsed" data-dock="right">
+    
+    <!-- Mini / Collapsed Pill View -->
+    <div id="collapsed-view" class="pill-content">
+      <div class="pill-left">
+        <div class="mini-art-wrapper">
+          <img id="pill-art" src="" alt="Art" class="pill-art" />
+          <div id="pill-art-fallback" class="pill-art-fallback">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="icon-note"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+          </div>
+        </div>
+        <div class="pill-meta">
+          <span id="pill-title" class="pill-title">Подключение...</span>
+          <span id="pill-artist" class="pill-artist">Ожидание аудио</span>
+        </div>
+      </div>
+      
+      <div class="pill-right">
+        <!-- Mini Pink Equalizer Bars -->
+        <div class="mini-equalizer" id="mini-eq">
+          <span class="eq-bar"></span>
+          <span class="eq-bar"></span>
+          <span class="eq-bar"></span>
+          <span class="eq-bar"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expanded Player View -->
+    <div id="expanded-view" class="expanded-content">
+      
+      <!-- Top Island Header & Window Drag Bar -->
+      <div class="island-header pywebview-drag-region" id="drag-handle">
+        <div class="header-left">
+          <span class="status-dot" id="status-dot"></span>
+          <span class="app-badge" id="app-badge">Windows Audio</span>
+        </div>
+
+        <div class="header-dock-tools">
+          <button class="dock-btn" id="btn-dock-left" title="Прикрепить слева">◄</button>
+          <button class="dock-btn" id="btn-dock-top" title="Остров сверху (iPhone)">▲</button>
+          <button class="dock-btn active" id="btn-dock-right" title="Прикрепить справа">►</button>
+          <button class="dock-btn" id="btn-dock-float" title="Свободный режим">✦</button>
+        </div>
+
+        <div class="header-actions">
+          <button class="action-btn pin-btn" id="btn-pin" title="Закрепить открытым">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-pin"><path d="M12 2v8m0 0l4-4m-4 4L8 6m4 12v4m-7-8h14"/></svg>
+          </button>
+          <button class="action-btn close-btn" id="btn-collapse" title="Свернуть">✕</button>
+        </div>
+      </div>
+
+      <!-- Main Track Information & Cover Art -->
+      <div class="track-section">
+        <div class="cover-art-container">
+          <img id="main-art" src="" alt="Album Art" class="main-art" />
+          <div id="main-art-fallback" class="main-art-fallback">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="icon-big-note"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+          </div>
+          <div class="art-glow"></div>
+        </div>
+
+        <div class="track-details">
+          <div class="title-marquee-wrapper">
+            <div id="track-title" class="track-title">Загрузка трека...</div>
+          </div>
+          <div id="track-artist" class="track-artist">Ожидание аудиопотока</div>
+          <div id="track-album" class="track-album"></div>
+        </div>
+      </div>
+
+      <!-- Real-time Pink Waveform Visualizer -->
+      <div class="visualizer-container" id="visualizer-container">
+        <!-- 24 dynamic frequency bars rendered via JS -->
+      </div>
+
+      <!-- Timeline & Seek Bar -->
+      <div class="timeline-section">
+        <div class="progress-bar-wrapper" id="progress-wrapper">
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill"></div>
+            <div class="progress-thumb" id="progress-thumb"></div>
+          </div>
+        </div>
+        <div class="time-labels">
+          <span id="time-current">0:00</span>
+          <span id="time-total">-0:00</span>
+        </div>
+      </div>
+
+      <!-- Playback Controls -->
+      <div class="controls-section">
+        <div class="volume-slider-wrapper">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="icon-volume"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          <input type="range" id="volume-slider" min="0" max="100" value="85" class="volume-range" />
+        </div>
+
+        <div class="playback-buttons">
+          <button class="ctrl-btn prev-btn" id="btn-prev" title="Предыдущий трек">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+          
+          <button class="ctrl-btn play-pause-btn" id="btn-play" title="Воспроизведение / Пауза">
+            <svg viewBox="0 0 24 24" fill="currentColor" id="icon-play" class="icon-play"><path d="M8 5v14l11-7z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" id="icon-pause" class="icon-pause hidden"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+
+          <button class="ctrl-btn next-btn" id="btn-next" title="Следующий трек">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </button>
+        </div>
+
+        <div class="right-filler"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
